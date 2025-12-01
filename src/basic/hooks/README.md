@@ -73,10 +73,12 @@
 src/basic/hooks/
 ├── useCart.ts         # 장바구니 관리 Hook
 ├── useProducts.ts     # 상품 관리 Hook
-├── useCoupons.ts      # 쿠폰 관리 Hook
-├── useDebounce.ts     # 디바운스 유틸리티 Hook
-└── useNotifications.ts # 알림 관리 Hook
+└── useCoupons.ts      # 쿠폰 관리 Hook
 ```
+
+**참고**: 
+- 알림 기능은 단순 UI 로직이므로 `components/ui/Toast.tsx`로 분리되었고, 상태 관리는 `App.tsx`에서 직접 처리합니다.
+- 유틸리티 Hook (`useDebounce`)은 `utils/hooks/` 폴더로 분리되었습니다.
 
 ---
 
@@ -280,79 +282,6 @@ import { initialCoupons } from '../constants';
 
 ---
 
-### 📦 `useDebounce` - 디바운스 유틸리티 Hook
-
-#### 목적
-입력값 디바운스 처리 (검색어 등)
-
-#### 사용하는 Models 함수
-```typescript
-// 없음 (유틸리티 Hook)
-```
-
-#### 사용하는 Constants
-```typescript
-import { DEBOUNCE_DELAY } from '../constants';
-```
-
-#### 파라미터
-- `value: T` - 디바운스할 값
-- `delay: number` - 지연 시간 (기본값: `DEBOUNCE_DELAY`)
-
-#### 반환값
-디바운스된 값
-
-#### 사용 예시
-```typescript
-const [searchTerm, setSearchTerm] = useState('');
-const debouncedSearchTerm = useDebounce(searchTerm);
-// searchTerm이 변경되어도 debouncedSearchTerm은 500ms 후에만 변경됨
-```
-
----
-
-### 📦 `useNotifications` - 알림 관리 Hook
-
-#### 목적
-알림 상태 관리 및 자동 제거 처리
-
-#### 사용하는 Models 함수
-```typescript
-// 없음 (UI 상태 관리만)
-```
-
-#### 사용하는 Constants
-```typescript
-import { NOTIFICATION_DURATION } from '../constants';
-```
-
-#### 상태 (State)
-- `notifications: Notification[]` - 알림 배열
-
-#### 주요 함수
-
-##### 1. `addNotification(message: string, type: 'error' | 'success' | 'warning')`
-**역할**: 알림 추가
-**로직**:
-1. 고유 ID 생성
-2. 알림 추가
-3. `NOTIFICATION_DURATION` 후 자동 제거
-
-##### 2. `removeNotification(id: string)`
-**역할**: 알림 제거
-**로직**: 알림 제거
-
-#### 반환값
-```typescript
-{
-  notifications: Notification[];
-  addNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
-  removeNotification: (id: string) => void;
-}
-```
-
----
-
 ## 사용 예시
 
 ### 예시 1: useCart 사용
@@ -399,7 +328,7 @@ const MyComponent = () => {
 ```typescript
 import { useState } from 'react';
 import { useProducts } from './hooks/useProducts';
-import { useDebounce } from './hooks/useDebounce';
+import { useDebounce } from './utils/hooks/useDebounce';
 
 const ProductList = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -424,14 +353,25 @@ const ProductList = () => {
 ### 예시 3: 여러 Hooks 조합
 
 ```typescript
+import { useState, useCallback } from 'react';
 import { useCart } from './hooks/useCart';
 import { useProducts } from './hooks/useProducts';
-import { useNotifications } from './hooks/useNotifications';
+import { Toast, Notification } from './components/ui/Toast';
 
 const App = () => {
+  // 알림 상태 관리 (단순 UI 상태는 App.tsx에서 직접 처리)
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  
+  const addNotification = useCallback((message: string, type: 'error' | 'success' | 'warning' = 'success') => {
+    const id = Date.now().toString();
+    setNotifications(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, NOTIFICATION_DURATION);
+  }, []);
+
   const { addToCart } = useCart();
   const { products } = useProducts();
-  const { addNotification } = useNotifications();
 
   const handleAddToCart = (product: Product) => {
     const result = addToCart(product);
@@ -444,6 +384,10 @@ const App = () => {
 
   return (
     <div>
+      <Toast 
+        notifications={notifications} 
+        onRemove={(id) => setNotifications(prev => prev.filter(n => n.id !== id))} 
+      />
       {products.map(product => (
         <button key={product.id} onClick={() => handleAddToCart(product)}>
           장바구니 담기
@@ -559,8 +503,10 @@ const App = () => {
 | | `validateCoupon` | `models/coupon.ts` |
 | `useProducts` | `filterProducts` | `models/product.ts` |
 | `useCoupons` | 없음 | - |
-| `useDebounce` | 없음 | - |
-| `useNotifications` | 없음 | - |
+
+**참고**: 
+- 알림 기능은 비즈니스 로직이 아닌 단순 UI 로직이므로 Hook으로 분리하지 않고 `components/ui/Toast.tsx` 컴포넌트로 분리되었습니다.
+- 유틸리티 Hook (`useDebounce`)은 `utils/hooks/` 폴더로 분리되었습니다.
 
 ---
 
@@ -586,12 +532,11 @@ useProducts
 useCoupons
   └─ (상태 관리만, models 의존성 없음)
 
-useDebounce
-  └─ constants (DEBOUNCE_DELAY)
-
-useNotifications
-  └─ constants (NOTIFICATION_DURATION)
 ```
+
+**참고**: 
+- 알림 기능은 `components/ui/Toast.tsx`로 분리되었습니다.
+- 유틸리티 Hook (`useDebounce`)은 `utils/hooks/` 폴더로 분리되었습니다.
 
 ### Hook 간 통신
 
@@ -602,7 +547,8 @@ Hooks는 서로 직접 통신하지 않습니다. 대신 상위 컴포넌트에�
 const App = () => {
   const { cart } = useCart();
   const { products } = useProducts();
-  const { addNotification } = useNotifications();
+  // 단순 UI 상태는 App.tsx에서 직접 관리
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   
   // 여러 Hooks를 조합하여 사용
 };
