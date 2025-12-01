@@ -1,68 +1,25 @@
 import { useState, useCallback, useEffect } from 'react';
 import { CartItem, Coupon, Product } from '../types';
-
-interface ProductWithUI extends Product {
-  description?: string;
-  isRecommended?: boolean;
-}
+import {
+  initialProducts,
+  initialCoupons,
+  ProductWithUI,
+  DEBOUNCE_DELAY,
+  NOTIFICATION_DURATION,
+  MIN_ORDER_AMOUNT_FOR_PERCENTAGE_COUPON,
+  BULK_PURCHASE_QUANTITY,
+  BULK_PURCHASE_ADDITIONAL_DISCOUNT,
+  MAX_DISCOUNT_RATE,
+  MAX_STOCK,
+  MAX_DISCOUNT_AMOUNT,
+  MAX_DISCOUNT_PERCENTAGE
+} from './constants';
 
 interface Notification {
   id: string;
   message: string;
   type: 'error' | 'success' | 'warning';
 }
-
-// 초기 데이터
-const initialProducts: ProductWithUI[] = [
-  {
-    id: 'p1',
-    name: '상품1',
-    price: 10000,
-    stock: 20,
-    discounts: [
-      { quantity: 10, rate: 0.1 },
-      { quantity: 20, rate: 0.2 }
-    ],
-    description: '최고급 품질의 프리미엄 상품입니다.'
-  },
-  {
-    id: 'p2',
-    name: '상품2',
-    price: 20000,
-    stock: 20,
-    discounts: [
-      { quantity: 10, rate: 0.15 }
-    ],
-    description: '다양한 기능을 갖춘 실용적인 상품입니다.',
-    isRecommended: true
-  },
-  {
-    id: 'p3',
-    name: '상품3',
-    price: 30000,
-    stock: 20,
-    discounts: [
-      { quantity: 10, rate: 0.2 },
-      { quantity: 30, rate: 0.25 }
-    ],
-    description: '대용량과 고성능을 자랑하는 상품입니다.'
-  }
-];
-
-const initialCoupons: Coupon[] = [
-  {
-    name: '5000원 할인',
-    code: 'AMOUNT5000',
-    discountType: 'amount',
-    discountValue: 5000
-  },
-  {
-    name: '10% 할인',
-    code: 'PERCENT10',
-    discountType: 'percentage',
-    discountValue: 10
-  }
-];
 
 const App = () => {
 
@@ -154,9 +111,9 @@ const App = () => {
         : maxDiscount;
     }, 0);
     
-    const hasBulkPurchase = cart.some(cartItem => cartItem.quantity >= 10);
+    const hasBulkPurchase = cart.some(cartItem => cartItem.quantity >= BULK_PURCHASE_QUANTITY);
     if (hasBulkPurchase) {
-      return Math.min(baseDiscount + 0.05, 0.5); // 대량 구매 시 추가 5% 할인
+      return Math.min(baseDiscount + BULK_PURCHASE_ADDITIONAL_DISCOUNT, MAX_DISCOUNT_RATE);
     }
     
     return baseDiscount;
@@ -210,7 +167,7 @@ const App = () => {
     
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 3000);
+    }, NOTIFICATION_DURATION);
   }, []);
 
   const [totalItemCount, setTotalItemCount] = useState(0);
@@ -240,7 +197,7 @@ const App = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 500);
+    }, DEBOUNCE_DELAY);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
@@ -306,8 +263,8 @@ const App = () => {
   const applyCoupon = useCallback((coupon: Coupon) => {
     const currentTotal = calculateCartTotal().totalAfterDiscount;
     
-    if (currentTotal < 10000 && coupon.discountType === 'percentage') {
-      addNotification('percentage 쿠폰은 10,000원 이상 구매 시 사용 가능합니다.', 'error');
+    if (currentTotal < MIN_ORDER_AMOUNT_FOR_PERCENTAGE_COUPON && coupon.discountType === 'percentage') {
+      addNotification(`percentage 쿠폰은 ${MIN_ORDER_AMOUNT_FOR_PERCENTAGE_COUPON.toLocaleString()}원 이상 구매 시 사용 가능합니다.`, 'error');
       return;
     }
 
@@ -650,9 +607,9 @@ const App = () => {
                             } else if (parseInt(value) < 0) {
                               addNotification('재고는 0보다 커야 합니다', 'error');
                               setProductForm({ ...productForm, stock: 0 });
-                            } else if (parseInt(value) > 9999) {
-                              addNotification('재고는 9999개를 초과할 수 없습니다', 'error');
-                              setProductForm({ ...productForm, stock: 9999 });
+                            } else if (parseInt(value) > MAX_STOCK) {
+                              addNotification(`재고는 ${MAX_STOCK.toLocaleString()}개를 초과할 수 없습니다`, 'error');
+                              setProductForm({ ...productForm, stock: MAX_STOCK });
                             }
                           }}
                           className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border"
@@ -848,16 +805,16 @@ const App = () => {
                           onBlur={(e) => {
                             const value = parseInt(e.target.value) || 0;
                             if (couponForm.discountType === 'percentage') {
-                              if (value > 100) {
-                                addNotification('할인율은 100%를 초과할 수 없습니다', 'error');
-                                setCouponForm({ ...couponForm, discountValue: 100 });
+                              if (value > MAX_DISCOUNT_PERCENTAGE) {
+                                addNotification(`할인율은 ${MAX_DISCOUNT_PERCENTAGE}%를 초과할 수 없습니다`, 'error');
+                                setCouponForm({ ...couponForm, discountValue: MAX_DISCOUNT_PERCENTAGE });
                               } else if (value < 0) {
                                 setCouponForm({ ...couponForm, discountValue: 0 });
                               }
                             } else {
-                              if (value > 100000) {
-                                addNotification('할인 금액은 100,000원을 초과할 수 없습니다', 'error');
-                                setCouponForm({ ...couponForm, discountValue: 100000 });
+                              if (value > MAX_DISCOUNT_AMOUNT) {
+                                addNotification(`할인 금액은 ${MAX_DISCOUNT_AMOUNT.toLocaleString()}원을 초과할 수 없습니다`, 'error');
+                                setCouponForm({ ...couponForm, discountValue: MAX_DISCOUNT_AMOUNT });
                               } else if (value < 0) {
                                 setCouponForm({ ...couponForm, discountValue: 0 });
                               }
