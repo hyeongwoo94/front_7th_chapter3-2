@@ -1,29 +1,41 @@
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { Input } from '../../ui/Input';
-import { CloseIcon } from '../../icons';
 import { MAX_STOCK } from '../../../constants';
-import { ProductFormData } from './types';
-
-interface ProductFormProps {
-  productForm: ProductFormData;
-  editingProduct: string | null;
-  onFormChange: (updates: Partial<ProductFormData>) => void;
-  onSubmit: (e: React.FormEvent) => void;
-  onCancel: () => void;
-  addNotification: (message: string, type: 'error' | 'success' | 'warning') => void;
-}
+import { 
+  editingProductAtom, 
+  productFormAtom, 
+  resetProductFormAtom 
+} from '../../../atoms/adminAtoms';
+import { addProductAtom, updateProductAtom } from '../../../atoms/productAtoms';
+import { addNotificationAtom } from '../../../atoms/notificationAtoms';
 
 // 상품 추가/수정 폼 컴포넌트
-export const ProductForm = ({
-  productForm,
-  editingProduct,
-  onFormChange,
-  onSubmit,
-  onCancel,
-  addNotification
-}: ProductFormProps) => {
+export const ProductForm = () => {
+  const editingProduct = useAtomValue(editingProductAtom);
+  const [productForm, setProductForm] = useAtom(productFormAtom);
+  const resetProductForm = useSetAtom(resetProductFormAtom);
+  const addProduct = useSetAtom(addProductAtom);
+  const updateProduct = useSetAtom(updateProductAtom);
+  const addNotification = useSetAtom(addNotificationAtom);
+
+  const handleFormChange = (updates: Partial<typeof productForm>) => {
+    setProductForm({ ...productForm, ...updates });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingProduct && editingProduct !== 'new') {
+      updateProduct(editingProduct, productForm);
+      addNotification('상품이 수정되었습니다.', 'success');
+    } else {
+      addProduct(productForm);
+      addNotification('상품이 추가되었습니다.', 'success');
+    }
+    resetProductForm();
+  };
   return (
     <div className="p-6 border-t border-gray-200 bg-gray-50">
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900">
           {editingProduct === 'new' ? '새 상품 추가' : '상품 수정'}
         </h3>
@@ -33,7 +45,7 @@ export const ProductForm = ({
             <Input
               type="text"
               value={productForm.name}
-              onChange={(e) => onFormChange({ name: e.target.value })}
+              onChange={(e) => handleFormChange({ name: e.target.value })}
               required
             />
           </div>
@@ -42,7 +54,7 @@ export const ProductForm = ({
             <Input
               type="text"
               value={productForm.description}
-              onChange={(e) => onFormChange({ description: e.target.value })}
+              onChange={(e) => handleFormChange({ description: e.target.value })}
             />
           </div>
           <div>
@@ -53,16 +65,16 @@ export const ProductForm = ({
               onChange={(e) => {
                 const value = e.target.value;
                 if (value === '' || /^\d+$/.test(value)) {
-                  onFormChange({ price: value === '' ? 0 : parseInt(value) });
+                  handleFormChange({ price: value === '' ? 0 : parseInt(value) });
                 }
               }}
               onBlur={(e) => {
                 const value = e.target.value;
                 if (value === '') {
-                  onFormChange({ price: 0 });
+                  handleFormChange({ price: 0 });
                 } else if (parseInt(value) < 0) {
                   addNotification('가격은 0보다 커야 합니다', 'error');
-                  onFormChange({ price: 0 });
+                  handleFormChange({ price: 0 });
                 }
               }}
               placeholder="숫자만 입력"
@@ -77,19 +89,19 @@ export const ProductForm = ({
               onChange={(e) => {
                 const value = e.target.value;
                 if (value === '' || /^\d+$/.test(value)) {
-                  onFormChange({ stock: value === '' ? 0 : parseInt(value) });
+                  handleFormChange({ stock: value === '' ? 0 : parseInt(value) });
                 }
               }}
               onBlur={(e) => {
                 const value = e.target.value;
                 if (value === '') {
-                  onFormChange({ stock: 0 });
+                  handleFormChange({ stock: 0 });
                 } else if (parseInt(value) < 0) {
                   addNotification('재고는 0보다 커야 합니다', 'error');
-                  onFormChange({ stock: 0 });
+                  handleFormChange({ stock: 0 });
                 } else if (parseInt(value) > MAX_STOCK) {
                   addNotification(`재고는 ${MAX_STOCK.toLocaleString()}개를 초과할 수 없습니다`, 'error');
-                  onFormChange({ stock: MAX_STOCK });
+                  handleFormChange({ stock: MAX_STOCK });
                 }
               }}
               placeholder="숫자만 입력"
@@ -108,7 +120,7 @@ export const ProductForm = ({
                   onChange={(e) => {
                     const newDiscounts = [...productForm.discounts];
                     newDiscounts[index].quantity = parseInt(e.target.value) || 0;
-                    onFormChange({ discounts: newDiscounts });
+                    handleFormChange({ discounts: newDiscounts });
                   }}
                   className="w-20"
                   min="1"
@@ -121,7 +133,7 @@ export const ProductForm = ({
                   onChange={(e) => {
                     const newDiscounts = [...productForm.discounts];
                     newDiscounts[index].rate = (parseInt(e.target.value) || 0) / 100;
-                    onFormChange({ discounts: newDiscounts });
+                    handleFormChange({ discounts: newDiscounts });
                   }}
                   className="w-16"
                   min="0"
@@ -133,7 +145,7 @@ export const ProductForm = ({
                   type="button"
                   onClick={() => {
                     const newDiscounts = productForm.discounts.filter((_, i) => i !== index);
-                    onFormChange({ discounts: newDiscounts });
+                    handleFormChange({ discounts: newDiscounts });
                   }}
                   className="text-red-600 hover:text-red-800"
                 >
@@ -146,7 +158,7 @@ export const ProductForm = ({
             <button
               type="button"
               onClick={() => {
-                onFormChange({
+                handleFormChange({
                   discounts: [...productForm.discounts, { quantity: 10, rate: 0.1 }]
                 });
               }}
@@ -160,7 +172,7 @@ export const ProductForm = ({
         <div className="flex justify-end gap-3">
           <button
             type="button"
-            onClick={onCancel}
+                onClick={() => resetProductForm()}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             취소

@@ -1,36 +1,59 @@
-import { CartItem as CartItemType, Coupon } from '../../../../types';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { CartItem } from './CartItem';
 import { CouponSelector } from '../coupon/CouponSelector';
 import { calculateItemTotal } from '../../../models/cart';
-
-interface CartProps {
-  cart: CartItemType[];
-  selectedCoupon: Coupon | null;
-  total: { totalBeforeDiscount: number; totalAfterDiscount: number };
-  coupons: Coupon[];
-  onRemoveItem: (productId: string) => void;
-  onUpdateQuantity: (productId: string, quantity: number) => { success: boolean; message?: string };
-  onApplyCoupon: (coupon: Coupon) => void;
-  onSetSelectedCoupon: (coupon: Coupon | null) => void;
-  onOrder: () => void;
-  formatPrice: (price: number) => string;
-  addNotification: (message: string, type: 'error' | 'success' | 'warning') => void;
-}
+import { 
+  cartAtom, 
+  selectedCouponAtom, 
+  totalAtom,
+  removeFromCartAtom, 
+  updateQuantityAtom, 
+  applyCouponAtom, 
+  setSelectedCouponAtom, 
+  completeOrderAtom 
+} from '../../../atoms/cartAtoms';
+import { couponsAtom, isAdminAtom } from '../../../atoms/adminAtoms';
+import { addNotificationAtom } from '../../../atoms/notificationAtoms';
+import { formatPrice } from '../../../utils/formatters';
 
 // 장바구니 섹션 컴포넌트
-export const Cart = ({
-  cart,
-  selectedCoupon,
-  total,
-  coupons,
-  onRemoveItem,
-  onUpdateQuantity,
-  onApplyCoupon,
-  onSetSelectedCoupon,
-  onOrder,
-  formatPrice,
-  addNotification
-}: CartProps) => {
+export const Cart = () => {
+  const cart = useAtomValue(cartAtom);
+  const selectedCoupon = useAtomValue(selectedCouponAtom);
+  const total = useAtomValue(totalAtom);
+  const coupons = useAtomValue(couponsAtom);
+  const isAdmin = useAtomValue(isAdminAtom);
+  
+  const removeFromCart = useSetAtom(removeFromCartAtom);
+  const updateQuantity = useSetAtom(updateQuantityAtom);
+  const applyCoupon = useSetAtom(applyCouponAtom);
+  const setSelectedCoupon = useSetAtom(setSelectedCouponAtom);
+  const completeOrder = useSetAtom(completeOrderAtom);
+  const addNotification = useSetAtom(addNotificationAtom);
+
+  const handleUpdateQuantity = (productId: string, quantity: number) => {
+    const result = updateQuantity(productId, quantity);
+    if (result && !result.success && result.message) {
+      addNotification(result.message, 'error');
+    }
+  };
+
+  const handleApplyCoupon = (coupon: any) => {
+    const result = applyCoupon(coupon);
+    if (result && result.success) {
+      addNotification(result.message || '쿠폰이 적용되었습니다.', 'success');
+    } else if (result && !result.success) {
+      addNotification(result.message || '쿠폰 적용에 실패했습니다.', 'error');
+    }
+  };
+
+  const handleOrder = () => {
+    const orderNumber = `ORD-${Date.now()}`;
+    addNotification(`주문이 완료되었습니다. 주문번호: ${orderNumber}`, 'success');
+    completeOrder();
+  };
+
+  const formatPriceFunc = (price: number) => formatPrice(price, { isAdmin });
   return (
     <div className="sticky top-24 space-y-4">
       <section className="bg-white rounded-lg border border-gray-200 p-4">
@@ -54,14 +77,9 @@ export const Cart = ({
                 key={item.product.id}
                 item={item}
                 itemTotal={calculateItemTotal(item, cart)}
-                onRemove={() => onRemoveItem(item.product.id)}
-                onUpdateQuantity={(quantity) => {
-                  const result = onUpdateQuantity(item.product.id, quantity);
-                  if (!result.success && result.message) {
-                    addNotification(result.message, 'error');
-                  }
-                }}
-                formatPrice={formatPrice}
+                onRemove={() => removeFromCart(item.product.id)}
+                onUpdateQuantity={(quantity) => handleUpdateQuantity(item.product.id, quantity)}
+                formatPrice={formatPriceFunc}
               />
             ))}
           </div>
@@ -71,12 +89,7 @@ export const Cart = ({
       {cart.length > 0 && (
         <>
           <section className="bg-white rounded-lg border border-gray-200 p-4">
-            <CouponSelector
-              coupons={coupons}
-              selectedCoupon={selectedCoupon}
-              onSelect={onApplyCoupon}
-              onClear={() => onSetSelectedCoupon(null)}
-            />
+            <CouponSelector />
           </section>
 
           <section className="bg-white rounded-lg border border-gray-200 p-4">
@@ -99,7 +112,7 @@ export const Cart = ({
             </div>
             
             <button
-              onClick={onOrder}
+              onClick={handleOrder}
               className="w-full mt-4 py-3 bg-yellow-400 text-gray-900 rounded-md font-medium hover:bg-yellow-500 transition-colors"
             >
               {total.totalAfterDiscount.toLocaleString()}원 결제하기

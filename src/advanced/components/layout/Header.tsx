@@ -1,21 +1,16 @@
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { CartIcon } from '../icons';
-
-interface HeaderProps {
-  isAdmin: boolean;
-  onToggleAdmin: () => void;
-  searchTerm: string;
-  onSearchChange: (value: string) => void;
-  cartItemCount: number;
-}
+import { isAdminAtom, toggleAdminAtom } from '../../atoms/adminAtoms';
+import { searchTermAtom } from '../../atoms/productAtoms';
+import { totalItemCountAtom } from '../../atoms/cartAtoms';
 
 // 헤더 영역 컴포넌트
-export const Header = ({
-  isAdmin,
-  onToggleAdmin,
-  searchTerm,
-  onSearchChange,
-  cartItemCount
-}: HeaderProps) => {
+export const Header = () => {
+  const isAdmin = useAtomValue(isAdminAtom);
+  const toggleAdmin = useSetAtom(toggleAdminAtom);
+  const [searchTerm, setSearchTerm] = useAtom(searchTermAtom);
+  const cartItemCount = useAtomValue(totalItemCountAtom);
+
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40 border-b">
       <div className="max-w-7xl mx-auto px-4">
@@ -27,7 +22,7 @@ export const Header = ({
                 <input
                   type="text"
                   value={searchTerm}
-                  onChange={(e) => onSearchChange(e.target.value)}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="상품 검색..."
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                 />
@@ -36,7 +31,7 @@ export const Header = ({
           </div>
           <nav className="flex items-center space-x-4">
             <button
-              onClick={onToggleAdmin}
+              onClick={() => toggleAdmin()}
               className={`px-3 py-1.5 text-sm rounded transition-colors ${
                 isAdmin 
                   ? 'bg-gray-800 text-white' 

@@ -1,44 +1,50 @@
-import { ProductWithUI } from '../../../constants';
+import { useAtomValue, useSetAtom, useAtom } from 'jotai';
 import { ProductForm } from './ProductForm';
-import { ProductFormData } from './types';
-
-interface ProductManagementProps {
-  products: ProductWithUI[];
-  editingProduct: string | null;
-  productForm: ProductFormData;
-  showProductForm: boolean;
-  onAddProduct: () => void;
-  onEditProduct: (product: ProductWithUI) => void;
-  onDeleteProduct: (productId: string) => void;
-  onFormChange: (updates: Partial<ProductFormData>) => void;
-  onFormSubmit: (e: React.FormEvent) => void;
-  onFormCancel: () => void;
-  formatPrice: (price: number, productId?: string) => string;
-  addNotification: (message: string, type: 'error' | 'success' | 'warning') => void;
-}
+import { productsAtom } from '../../../atoms/productAtoms';
+import { 
+  editingProductAtom, 
+  productFormAtom, 
+  showProductFormAtom,
+  handleAddProductAtom,
+  startEditProductAtom,
+  resetProductFormAtom
+} from '../../../atoms/adminAtoms';
+import { deleteProductAtom } from '../../../atoms/productAtoms';
+import { addNotificationAtom } from '../../../atoms/notificationAtoms';
+import { formatPrice } from '../../../utils/formatters';
+import { isAdminAtom } from '../../../atoms/adminAtoms';
 
 // 상품 관리 섹션 컴포넌트
-export const ProductManagement = ({
-  products,
-  editingProduct,
-  productForm,
-  showProductForm,
-  onAddProduct,
-  onEditProduct,
-  onDeleteProduct,
-  onFormChange,
-  onFormSubmit,
-  onFormCancel,
-  formatPrice,
-  addNotification
-}: ProductManagementProps) => {
+export const ProductManagement = () => {
+  const products = useAtomValue(productsAtom);
+  const editingProduct = useAtomValue(editingProductAtom);
+  const [productForm, setProductForm] = useAtom(productFormAtom);
+  const showProductForm = useAtomValue(showProductFormAtom);
+  const isAdmin = useAtomValue(isAdminAtom);
+  
+  const handleAddProduct = useSetAtom(handleAddProductAtom);
+  const startEditProduct = useSetAtom(startEditProductAtom);
+  const deleteProduct = useSetAtom(deleteProductAtom);
+  const resetProductForm = useSetAtom(resetProductFormAtom);
+  const addNotification = useSetAtom(addNotificationAtom);
+
+  const handleDeleteProduct = (productId: string) => {
+    deleteProduct(productId);
+    addNotification('상품이 삭제되었습니다.', 'success');
+  };
+
+  const handleEditProduct = (product: any) => {
+    startEditProduct(product);
+  };
+
+  const formatPriceFunc = (price: number, productId?: string) => formatPrice(price, { isAdmin, product: productId ? products.find(p => p.id === productId) : undefined });
   return (
     <section className="bg-white rounded-lg border border-gray-200">
       <div className="p-6 border-b border-gray-200">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">상품 목록</h2>
           <button
-            onClick={onAddProduct}
+            onClick={() => handleAddProduct()}
             className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800"
           >
             새 상품 추가
@@ -61,7 +67,7 @@ export const ProductManagement = ({
             {products.map(product => (
               <tr key={product.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatPrice(product.price, product.id)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatPriceFunc(product.price, product.id)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                     product.stock > 10 ? 'bg-green-100 text-green-800' :
@@ -74,13 +80,13 @@ export const ProductManagement = ({
                 <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{product.description || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
-                    onClick={() => onEditProduct(product)}
+                    onClick={() => handleEditProduct(product)}
                     className="text-indigo-600 hover:text-indigo-900 mr-3"
                   >
                     수정
                   </button>
                   <button
-                    onClick={() => onDeleteProduct(product.id)}
+                    onClick={() => handleDeleteProduct(product.id)}
                     className="text-red-600 hover:text-red-900"
                   >
                     삭제
@@ -93,14 +99,7 @@ export const ProductManagement = ({
       </div>
 
       {showProductForm && (
-        <ProductForm
-          productForm={productForm}
-          editingProduct={editingProduct}
-          onFormChange={onFormChange}
-          onSubmit={onFormSubmit}
-          onCancel={onFormCancel}
-          addNotification={addNotification}
-        />
+        <ProductForm />
       )}
     </section>
   );

@@ -1,31 +1,25 @@
-import { Coupon } from '../../../../types';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { CouponForm } from './CouponForm';
-import { CouponFormData } from './types';
-
-interface CouponManagementProps {
-  coupons: Coupon[];
-  couponForm: CouponFormData;
-  showCouponForm: boolean;
-  onAddCoupon: () => void;
-  onDeleteCoupon: (couponCode: string) => void;
-  onFormChange: (updates: Partial<CouponFormData>) => void;
-  onFormSubmit: (e: React.FormEvent) => void;
-  onFormCancel: () => void;
-  addNotification: (message: string, type: 'error' | 'success' | 'warning') => void;
-}
+import { couponsAtom, showCouponFormAtom, handleAddCouponAtom } from '../../../atoms/adminAtoms';
+import { handleDeleteCouponAtom } from '../../../atoms/adminAtoms';
+import { addNotificationAtom } from '../../../atoms/notificationAtoms';
 
 // 쿠폰 관리 섹션 컴포넌트
-export const CouponManagement = ({
-  coupons,
-  couponForm,
-  showCouponForm,
-  onAddCoupon,
-  onDeleteCoupon,
-  onFormChange,
-  onFormSubmit,
-  onFormCancel,
-  addNotification
-}: CouponManagementProps) => {
+export const CouponManagement = () => {
+  const coupons = useAtomValue(couponsAtom);
+  const showCouponForm = useAtomValue(showCouponFormAtom);
+  const handleAddCoupon = useSetAtom(handleAddCouponAtom);
+  const handleDeleteCoupon = useSetAtom(handleDeleteCouponAtom);
+  const addNotification = useSetAtom(addNotificationAtom);
+
+  const onDeleteCoupon = (couponCode: string) => {
+    const result = handleDeleteCoupon(couponCode);
+    if (result && result.success) {
+      addNotification(result.message || '쿠폰이 삭제되었습니다.', 'success');
+    } else if (result && !result.success) {
+      addNotification(result.message || '쿠폰 삭제에 실패했습니다.', 'error');
+    }
+  };
   return (
     <section className="bg-white rounded-lg border border-gray-200">
       <div className="p-6 border-b border-gray-200">
@@ -61,7 +55,7 @@ export const CouponManagement = ({
 
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-center hover:border-gray-400 transition-colors">
             <button
-              onClick={onAddCoupon}
+              onClick={() => handleAddCoupon()}
               className="text-gray-400 hover:text-gray-600 flex flex-col items-center"
             >
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,13 +67,7 @@ export const CouponManagement = ({
         </div>
 
         {showCouponForm && (
-          <CouponForm
-            couponForm={couponForm}
-            onFormChange={onFormChange}
-            onSubmit={onFormSubmit}
-            onCancel={onFormCancel}
-            addNotification={addNotification}
-          />
+          <CouponForm />
         )}
       </div>
     </section>

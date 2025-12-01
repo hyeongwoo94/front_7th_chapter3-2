@@ -1,19 +1,29 @@
+import { useAtomValue, useSetAtom } from 'jotai';
 import { Coupon } from '../../../../types';
-
-interface CouponSelectorProps {
-  coupons: Coupon[];
-  selectedCoupon: Coupon | null;
-  onSelect: (coupon: Coupon) => void;
-  onClear: () => void;
-}
+import { couponsAtom } from '../../../atoms/adminAtoms';
+import { selectedCouponAtom, setSelectedCouponAtom, applyCouponAtom } from '../../../atoms/cartAtoms';
+import { addNotificationAtom } from '../../../atoms/notificationAtoms';
 
 // 쿠폰 선택 드롭다운 컴포넌트
-export const CouponSelector = ({
-  coupons,
-  selectedCoupon,
-  onSelect,
-  onClear
-}: CouponSelectorProps) => {
+export const CouponSelector = () => {
+  const coupons = useAtomValue(couponsAtom);
+  const selectedCoupon = useAtomValue(selectedCouponAtom);
+  const applyCoupon = useSetAtom(applyCouponAtom);
+  const setSelectedCoupon = useSetAtom(setSelectedCouponAtom);
+  const addNotification = useSetAtom(addNotificationAtom);
+
+  const handleSelect = (coupon: Coupon) => {
+    const result = applyCoupon(coupon);
+    if (result && result.success) {
+      addNotification(result.message || '쿠폰이 적용되었습니다.', 'success');
+    } else if (result && !result.success) {
+      addNotification(result.message || '쿠폰 적용에 실패했습니다.', 'error');
+    }
+  };
+
+  const handleClear = () => {
+    setSelectedCoupon(null);
+  };
   return (
     <>
       <div className="flex items-center justify-between mb-3">
@@ -29,9 +39,9 @@ export const CouponSelector = ({
           onChange={(e) => {
             const coupon = coupons.find(c => c.code === e.target.value);
             if (coupon) {
-              onSelect(coupon);
+              handleSelect(coupon);
             } else {
-              onClear();
+              handleClear();
             }
           }}
         >

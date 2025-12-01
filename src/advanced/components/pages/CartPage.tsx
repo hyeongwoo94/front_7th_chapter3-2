@@ -1,49 +1,17 @@
-import { ProductWithUI } from '../../constants';
-import { CartItem, Coupon } from '../../../types';
-import { useProducts } from '../../hooks/entities/useProducts';
+import { useAtomValue } from 'jotai';
 import { useDebounce } from '../../utils/hooks/useDebounce';
 import { ProductCard } from '../features/product/ProductCard';
 import { Cart } from '../features/cart/Cart';
-
-interface CartPageProps {
-  searchTerm: string;
-  cart: CartItem[];
-  selectedCoupon: Coupon | null;
-  total: { totalBeforeDiscount: number; totalAfterDiscount: number };
-  coupons: Coupon[];
-  onAddToCart: (product: ProductWithUI) => void;
-  onRemoveFromCart: (productId: string) => void;
-  onUpdateQuantity: (productId: string, quantity: number) => { success: boolean; message?: string };
-  onApplyCoupon: (coupon: Coupon) => void;
-  onSetSelectedCoupon: (coupon: Coupon | null) => void;
-  onOrder: () => void;
-  getRemainingStockForProduct: (product: ProductWithUI) => number;
-  formatPrice: (price: number, productId?: string) => string;
-  addNotification: (message: string, type: 'error' | 'success' | 'warning') => void;
-}
+import { filteredProductsAtom, productsAtom, searchTermAtom } from '../../atoms/productAtoms';
+import { getRemainingStockForProductAtom } from '../../atoms/cartAtoms';
 
 // 장바구니 페이지 컴포넌트 (상품 목록 + 장바구니)
-export const CartPage = ({ 
-  searchTerm,
-  cart,
-  selectedCoupon,
-  total,
-  coupons,
-  onAddToCart,
-  onRemoveFromCart,
-  onUpdateQuantity,
-  onApplyCoupon,
-  onSetSelectedCoupon,
-  onOrder,
-  getRemainingStockForProduct,
-  formatPrice,
-  addNotification
-}: CartPageProps) => {
+export const CartPage = () => {
+  const searchTerm = useAtomValue(searchTermAtom);
   const debouncedSearchTerm = useDebounce(searchTerm);
-
-  // Hooks 사용
-  const { products, filteredProducts } = useProducts(debouncedSearchTerm);
-
+  const products = useAtomValue(productsAtom);
+  const filteredProducts = useAtomValue(filteredProductsAtom);
+  const getRemainingStockForProduct = useAtomValue(getRemainingStockForProductAtom);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -66,8 +34,6 @@ export const CartPage = ({
                   key={product.id}
                   product={product}
                   remainingStock={getRemainingStockForProduct(product)}
-                  onAddToCart={onAddToCart}
-                  formatPrice={formatPrice}
                 />
               ))}
             </div>
@@ -76,19 +42,7 @@ export const CartPage = ({
       </div>
       
       <div className="lg:col-span-1">
-        <Cart
-          cart={cart}
-          selectedCoupon={selectedCoupon}
-          total={total}
-          coupons={coupons}
-          onRemoveItem={onRemoveFromCart}
-          onUpdateQuantity={onUpdateQuantity}
-          onApplyCoupon={onApplyCoupon}
-          onSetSelectedCoupon={onSetSelectedCoupon}
-          onOrder={onOrder}
-          formatPrice={(price) => formatPrice(price)}
-          addNotification={addNotification}
-        />
+        <Cart />
       </div>
     </div>
   );

@@ -1,4 +1,6 @@
+import { useAtomValue, useSetAtom } from 'jotai';
 import { CloseIcon } from '../icons';
+import { notificationsAtom, removeNotificationAtom } from '../../atoms/notificationAtoms';
 
 export interface Notification {
   id: string;
@@ -6,13 +8,11 @@ export interface Notification {
   type: 'error' | 'success' | 'warning';
 }
 
-interface ToastProps {
-  notifications: Notification[];
-  onRemove: (id: string) => void;
-}
-
 // Toast 알림 컴포넌트
-export const Toast = ({ notifications, onRemove }: ToastProps) => {
+export const Toast = () => {
+  const notifications = useAtomValue(notificationsAtom);
+  const removeNotification = useSetAtom(removeNotificationAtom);
+
   if (notifications.length === 0) {
     return null;
   }
@@ -29,12 +29,12 @@ export const Toast = ({ notifications, onRemove }: ToastProps) => {
           }`}
         >
           <span className="mr-2">{notif.message}</span>
-              <button 
-                onClick={() => onRemove(notif.id)}
-                className="text-white hover:text-gray-200"
-              >
-                <CloseIcon />
-              </button>
+          <button 
+            onClick={() => removeNotification(notif.id)}
+            className="text-white hover:text-gray-200"
+          >
+            <CloseIcon />
+          </button>
         </div>
       ))}
     </div>

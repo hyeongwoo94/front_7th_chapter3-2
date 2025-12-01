@@ -1,63 +1,11 @@
-import { ProductWithUI } from '../../../constants';
-import { Coupon } from '../../../../types';
+import { useAtom, useSetAtom } from 'jotai';
 import { ProductManagement } from './ProductManagement';
 import { CouponManagement } from './CouponManagement';
-import { AdminTab, ProductFormData, CouponFormData, EMPTY_PRODUCT_FORM, EMPTY_COUPON_FORM } from './types';
-
-interface AdminPageProps {
-  activeTab: AdminTab;
-  setActiveTab: (tab: AdminTab) => void;
-  products: ProductWithUI[];
-  coupons: Coupon[];
-  editingProduct: string | null;
-  setEditingProduct: (id: string | null) => void;
-  productForm: ProductFormData;
-  setProductForm: (form: ProductFormData) => void;
-  couponForm: CouponFormData;
-  setCouponForm: (form: CouponFormData) => void;
-  showProductForm: boolean;
-  setShowProductForm: (show: boolean) => void;
-  showCouponForm: boolean;
-  setShowCouponForm: (show: boolean) => void;
-  handleAddProduct: (newProduct: Omit<ProductWithUI, 'id'>) => void;
-  handleUpdateProduct: (productId: string, updates: Partial<ProductWithUI>) => void;
-  handleDeleteProduct: (productId: string) => void;
-  handleAddCoupon: (newCoupon: CouponFormData) => void;
-  handleDeleteCoupon: (couponCode: string) => void;
-  handleProductSubmit: (e: React.FormEvent) => void;
-  handleCouponSubmit: (e: React.FormEvent) => void;
-  startEditProduct: (product: ProductWithUI) => void;
-  addNotification: (message: string, type: 'error' | 'success' | 'warning') => void;
-  formatPrice: (price: number, productId?: string) => string;
-}
+import { activeTabAtom, setActiveTabAtom } from '../../../atoms/adminAtoms';
 
 // 관리자 페이지 컴포넌트
-export const AdminPage = ({
-  activeTab,
-  setActiveTab,
-  products,
-  coupons,
-  editingProduct,
-  setEditingProduct,
-  productForm,
-  setProductForm,
-  couponForm,
-  setCouponForm,
-  showProductForm,
-  setShowProductForm,
-  showCouponForm,
-  setShowCouponForm,
-  handleAddProduct,
-  handleUpdateProduct,
-  handleDeleteProduct,
-  handleAddCoupon,
-  handleDeleteCoupon,
-  handleProductSubmit,
-  handleCouponSubmit,
-  startEditProduct,
-  addNotification,
-  formatPrice,
-}: AdminPageProps) => {
+export const AdminPage = () => {
+  const [activeTab, setActiveTab] = useAtom(activeTabAtom);
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
@@ -90,43 +38,9 @@ export const AdminPage = ({
       </div>
 
       {activeTab === 'products' ? (
-        <ProductManagement
-          products={products}
-          editingProduct={editingProduct}
-          productForm={productForm}
-          showProductForm={showProductForm}
-          onAddProduct={() => {
-            setEditingProduct('new');
-            setProductForm(EMPTY_PRODUCT_FORM);
-            setShowProductForm(true);
-          }}
-          onEditProduct={startEditProduct}
-          onDeleteProduct={handleDeleteProduct}
-          onFormChange={(updates) => setProductForm({ ...productForm, ...updates })}
-          onFormSubmit={handleProductSubmit}
-          onFormCancel={() => {
-            setEditingProduct(null);
-            setProductForm(EMPTY_PRODUCT_FORM);
-            setShowProductForm(false);
-          }}
-          formatPrice={formatPrice}
-          addNotification={addNotification}
-        />
+        <ProductManagement />
       ) : (
-        <CouponManagement
-          coupons={coupons}
-          couponForm={couponForm}
-          showCouponForm={showCouponForm}
-          onAddCoupon={() => setShowCouponForm(!showCouponForm)}
-          onDeleteCoupon={handleDeleteCoupon}
-          onFormChange={(updates) => setCouponForm({ ...couponForm, ...updates })}
-          onFormSubmit={handleCouponSubmit}
-          onFormCancel={() => {
-            setCouponForm(EMPTY_COUPON_FORM);
-            setShowCouponForm(false);
-          }}
-          addNotification={addNotification}
-        />
+        <CouponManagement />
       )}
     </div>
   );
