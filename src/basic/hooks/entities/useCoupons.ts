@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Coupon } from '../../types';
-import { initialCoupons } from '../constants';
+import { Coupon } from '../../../types';
+import { initialCoupons } from '../../constants';
 
 // 쿠폰 관리 Hook
 export const useCoupons = () => {
@@ -42,3 +42,4 @@ export const useCoupons = () => {
     deleteCoupon
   };
 };
+

@@ -1,14 +1,14 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { CartItem, Coupon, Product } from '../../types';
+import { CartItem, Coupon, Product } from '../../../types';
 import {
   addItemToCart,
   removeItemFromCart,
   updateCartItemQuantity,
   calculateCartTotal,
   getRemainingStock
-} from '../models/cart';
-import { validateCoupon } from '../models/coupon';
-import { MIN_ORDER_AMOUNT_FOR_PERCENTAGE_COUPON } from '../constants';
+} from '../../models/cart';
+import { validateCoupon } from '../../models/coupon';
+import { MIN_ORDER_AMOUNT_FOR_PERCENTAGE_COUPON } from '../../constants';
 
 // 장바구니 관리 Hook
 export const useCart = () => {
@@ -142,3 +142,4 @@ export const useCart = () => {
     getRemainingStockForProduct
   };
 };
+

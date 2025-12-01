@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { ProductWithUI, initialProducts } from '../constants';
-import { filterProducts } from '../models/product';
+import { ProductWithUI, initialProducts } from '../../constants';
+import { filterProducts } from '../../models/product';
 
 // 상품 관리 Hook
 export const useProducts = (searchTerm?: string) => {
@@ -104,3 +104,4 @@ export const useProducts = (searchTerm?: string) => {
     removeProductDiscount
   };
 };
+
