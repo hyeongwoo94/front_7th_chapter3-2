@@ -1,6 +1,7 @@
 import { Coupon } from '../../types';
 import { MIN_ORDER_AMOUNT_FOR_PERCENTAGE_COUPON } from '../constants';
 
+// 쿠폰을 총액에 적용
 /**
  * 쿠폰을 총액에 적용
  * @param total 할인 적용 전 총액
@@ -18,6 +19,7 @@ export const applyCouponToTotal = (
   }
 };
 
+// 쿠폰 사용 가능 여부 검증
 /**
  * 쿠폰 사용 가능 여부 검증
  * @param total 현재 총액

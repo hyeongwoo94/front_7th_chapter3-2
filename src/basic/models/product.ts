@@ -1,5 +1,6 @@
 import { Product } from '../../types';
 
+// 상품 검색/필터링
 /**
  * 상품 검색/필터링
  * @param products 상품 배열 (Product 또는 ProductWithUI)

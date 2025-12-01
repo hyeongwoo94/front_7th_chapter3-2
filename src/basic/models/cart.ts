@@ -6,6 +6,7 @@ import {
 } from '../constants';
 import { applyCouponToTotal } from './coupon';
 
+// 적용 가능한 최대 할인율 계산
 /**
  * 적용 가능한 최대 할인율 계산
  * @param item 장바구니 아이템
@@ -41,6 +42,7 @@ export const getMaxApplicableDiscount = (
   return baseDiscount;
 };
 
+// 개별 아이템의 할인 적용 후 총액 계산
 /**
  * 개별 아이템의 할인 적용 후 총액 계산
  * @param item 장바구니 아이템
@@ -58,6 +60,7 @@ export const calculateItemTotal = (
   return Math.round(price * quantity * (1 - discount));
 };
 
+// 장바구니 총액 계산 (할인 전/후)
 /**
  * 장바구니 총액 계산 (할인 전/후)
  * @param cart 장바구니 아이템 배열
@@ -91,6 +94,7 @@ export const calculateCartTotal = (
   };
 };
 
+// 남은 재고 계산
 /**
  * 남은 재고 계산
  * @param product 상품
@@ -106,6 +110,7 @@ export const getRemainingStock = (
   return remaining;
 };
 
+// 장바구니에 상품 추가 (순수함수)
 /**
  * 장바구니에 상품 추가 (순수함수)
  * @param cart 현재 장바구니
@@ -131,6 +136,7 @@ export const addItemToCart = (
   return [...cart, { product, quantity: 1 }];
 };
 
+// 장바구니에서 상품 제거 (순수함수)
 /**
  * 장바구니에서 상품 제거 (순수함수)
  * @param cart 현재 장바구니
@@ -144,6 +150,7 @@ export const removeItemFromCart = (
   return cart.filter(item => item.product.id !== productId);
 };
 
+// 장바구니 아이템 수량 변경 (순수함수)
 /**
  * 장바구니 아이템 수량 변경 (순수함수)
  * @param cart 현재 장바구니
