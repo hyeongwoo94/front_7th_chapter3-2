@@ -1,77 +1,40 @@
-import { useState, useCallback, useEffect } from 'react';
-import { CartItem, Coupon } from '../types';
-// constants로 분리
-import {
-  initialProducts,
-  initialCoupons,
-  ProductWithUI,
-  DEBOUNCE_DELAY,
-  NOTIFICATION_DURATION,
-  MIN_ORDER_AMOUNT_FOR_PERCENTAGE_COUPON,
-  MAX_STOCK,
-  MAX_DISCOUNT_AMOUNT,
-  MAX_DISCOUNT_PERCENTAGE
-} from './constants';
-// models에서 순수함수 import
-import {
-  calculateItemTotal,
-  calculateCartTotal,
-  getRemainingStock
-} from './models/cart';
-import { filterProducts } from './models/product';
-
-interface Notification {
-  id: string;
-  message: string;
-  type: 'error' | 'success' | 'warning';
-}
+import { useState } from 'react';
+import { ProductWithUI, MAX_STOCK, MAX_DISCOUNT_AMOUNT, MAX_DISCOUNT_PERCENTAGE } from './constants';
+// hooks import
+import { useCart } from './hooks/useCart';
+import { useProducts } from './hooks/useProducts';
+import { useCoupons } from './hooks/useCoupons';
+import { useDebounce } from './hooks/useDebounce';
+import { useNotifications } from './hooks/useNotifications';
+// models에서 순수함수 import (계산용)
+import { calculateItemTotal } from './models/cart';
 
 const App = () => {
+  // Hooks 사용
+  const { notifications, addNotification, removeNotification } = useNotifications();
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm);
+  const { products, filteredProducts, addProduct, updateProduct, deleteProduct } = useProducts(debouncedSearchTerm);
+  const { coupons, addCoupon, deleteCoupon } = useCoupons();
+  const {
+    cart,
+    selectedCoupon,
+    total,
+    totalItemCount,
+    addToCart: addToCartHook,
+    removeFromCart,
+    updateQuantity,
+    applyCoupon: applyCouponHook,
+    setSelectedCoupon,
+    clearCart,
+    getRemainingStockForProduct
+  } = useCart();
 
-  const [products, setProducts] = useState<ProductWithUI[]>(() => {
-    const saved = localStorage.getItem('products');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return initialProducts;
-      }
-    }
-    return initialProducts;
-  });
-
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('cart');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  });
-
-  const [coupons, setCoupons] = useState<Coupon[]>(() => {
-    const saved = localStorage.getItem('coupons');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return initialCoupons;
-      }
-    }
-    return initialCoupons;
-  });
-
-  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+  // UI 상태
   const [isAdmin, setIsAdmin] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showCouponForm, setShowCouponForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'products' | 'coupons'>('products');
   const [showProductForm, setShowProductForm] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
   // Admin
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -91,10 +54,11 @@ const App = () => {
   });
 
 
+  // 가격 포맷팅 함수
   const formatPrice = (price: number, productId?: string): string => {
     if (productId) {
       const product = products.find(p => p.id === productId);
-      if (product && getRemainingStock(product, cart) <= 0) {
+      if (product && getRemainingStockForProduct(product) <= 0) {
         return 'SOLD OUT';
       }
     }
@@ -106,175 +70,77 @@ const App = () => {
     return `₩${price.toLocaleString()}`;
   };
 
-
-  const addNotification = useCallback((message: string, type: 'error' | 'success' | 'warning' = 'success') => {
-    const id = Date.now().toString();
-    setNotifications(prev => [...prev, { id, message, type }]);
-    
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, NOTIFICATION_DURATION);
-  }, []);
-
-  const [totalItemCount, setTotalItemCount] = useState(0);
-  
-
-  useEffect(() => {
-    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-    setTotalItemCount(count);
-  }, [cart]);
-
-  useEffect(() => {
-    localStorage.setItem('products', JSON.stringify(products));
-  }, [products]);
-
-  useEffect(() => {
-    localStorage.setItem('coupons', JSON.stringify(coupons));
-  }, [coupons]);
-
-  useEffect(() => {
-    if (cart.length > 0) {
-      localStorage.setItem('cart', JSON.stringify(cart));
+  // 장바구니에 상품 추가 (알림 포함)
+  const addToCart = (product: ProductWithUI) => {
+    const result = addToCartHook(product);
+    if (result.success) {
+      addNotification(result.message, 'success');
     } else {
-      localStorage.removeItem('cart');
+      addNotification(result.message, 'error');
     }
-  }, [cart]);
+  };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, DEBOUNCE_DELAY);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const addToCart = useCallback((product: ProductWithUI) => {
-    const remainingStock = getRemainingStock(product, cart);
-    if (remainingStock <= 0) {
-      addNotification('재고가 부족합니다!', 'error');
-      return;
+  // 쿠폰 적용 (알림 포함)
+  const applyCoupon = (coupon: typeof coupons[0]) => {
+    const result = applyCouponHook(coupon);
+    if (result.success) {
+      addNotification(result.message, 'success');
+    } else {
+      addNotification(result.message, 'error');
     }
+  };
 
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.product.id === product.id);
-      
-      if (existingItem) {
-        const newQuantity = existingItem.quantity + 1;
-        
-        if (newQuantity > product.stock) {
-          addNotification(`재고는 ${product.stock}개까지만 있습니다.`, 'error');
-          return prevCart;
-        }
-
-        return prevCart.map(item =>
-          item.product.id === product.id
-            ? { ...item, quantity: newQuantity }
-            : item
-        );
-      }
-      
-      return [...prevCart, { product, quantity: 1 }];
-    });
-    
-    addNotification('장바구니에 담았습니다', 'success');
-  }, [cart, addNotification]);
-
-  const removeFromCart = useCallback((productId: string) => {
-    setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
-  }, []);
-
-  const updateQuantity = useCallback((productId: string, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
-
-    const maxStock = product.stock;
-    if (newQuantity > maxStock) {
-      addNotification(`재고는 ${maxStock}개까지만 있습니다.`, 'error');
-      return;
-    }
-
-    setCart(prevCart =>
-      prevCart.map(item =>
-        item.product.id === productId
-          ? { ...item, quantity: newQuantity }
-          : item
-      )
-    );
-  }, [products, removeFromCart, addNotification]);
-
-  const applyCoupon = useCallback((coupon: Coupon) => {
-    const currentTotal = calculateCartTotal(cart, selectedCoupon).totalAfterDiscount;
-    
-    if (currentTotal < MIN_ORDER_AMOUNT_FOR_PERCENTAGE_COUPON && coupon.discountType === 'percentage') {
-      addNotification(`percentage 쿠폰은 ${MIN_ORDER_AMOUNT_FOR_PERCENTAGE_COUPON.toLocaleString()}원 이상 구매 시 사용 가능합니다.`, 'error');
-      return;
-    }
-
-    setSelectedCoupon(coupon);
-    addNotification('쿠폰이 적용되었습니다.', 'success');
-  }, [cart, selectedCoupon, addNotification]);
-
-  const completeOrder = useCallback(() => {
+  // 주문 완료
+  const completeOrder = () => {
     const orderNumber = `ORD-${Date.now()}`;
     addNotification(`주문이 완료되었습니다. 주문번호: ${orderNumber}`, 'success');
-    setCart([]);
-    setSelectedCoupon(null);
-  }, [addNotification]);
+    clearCart();
+  };
 
-  const addProduct = useCallback((newProduct: Omit<ProductWithUI, 'id'>) => {
-    const product: ProductWithUI = {
-      ...newProduct,
-      id: `p${Date.now()}`
-    };
-    setProducts(prev => [...prev, product]);
+  // 상품 추가 (알림 포함)
+  const handleAddProduct = (newProduct: Omit<ProductWithUI, 'id'>) => {
+    addProduct(newProduct);
     addNotification('상품이 추가되었습니다.', 'success');
-  }, [addNotification]);
+  };
 
-  const updateProduct = useCallback((productId: string, updates: Partial<ProductWithUI>) => {
-    setProducts(prev =>
-      prev.map(product =>
-        product.id === productId
-          ? { ...product, ...updates }
-          : product
-      )
-    );
+  // 상품 수정 (알림 포함)
+  const handleUpdateProduct = (productId: string, updates: Partial<ProductWithUI>) => {
+    updateProduct(productId, updates);
     addNotification('상품이 수정되었습니다.', 'success');
-  }, [addNotification]);
+  };
 
-  const deleteProduct = useCallback((productId: string) => {
-    setProducts(prev => prev.filter(p => p.id !== productId));
+  // 상품 삭제 (알림 포함)
+  const handleDeleteProduct = (productId: string) => {
+    deleteProduct(productId);
     addNotification('상품이 삭제되었습니다.', 'success');
-  }, [addNotification]);
+  };
 
-  const addCoupon = useCallback((newCoupon: Coupon) => {
-    const existingCoupon = coupons.find(c => c.code === newCoupon.code);
-    if (existingCoupon) {
-      addNotification('이미 존재하는 쿠폰 코드입니다.', 'error');
-      return;
+  // 쿠폰 추가 (알림 포함)
+  const handleAddCoupon = (newCoupon: typeof coupons[0]) => {
+    const result = addCoupon(newCoupon);
+    if (result.success) {
+      addNotification(result.message, 'success');
+    } else {
+      addNotification(result.message, 'error');
     }
-    setCoupons(prev => [...prev, newCoupon]);
-    addNotification('쿠폰이 추가되었습니다.', 'success');
-  }, [coupons, addNotification]);
+  };
 
-  const deleteCoupon = useCallback((couponCode: string) => {
-    setCoupons(prev => prev.filter(c => c.code !== couponCode));
+  // 쿠폰 삭제 (알림 포함)
+  const handleDeleteCoupon = (couponCode: string) => {
+    deleteCoupon(couponCode);
     if (selectedCoupon?.code === couponCode) {
       setSelectedCoupon(null);
     }
     addNotification('쿠폰이 삭제되었습니다.', 'success');
-  }, [selectedCoupon, addNotification]);
+  };
 
   const handleProductSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingProduct && editingProduct !== 'new') {
-      updateProduct(editingProduct, productForm);
+      handleUpdateProduct(editingProduct, productForm);
       setEditingProduct(null);
     } else {
-      addProduct({
+      handleAddProduct({
         ...productForm,
         discounts: productForm.discounts
       });
@@ -286,7 +152,7 @@ const App = () => {
 
   const handleCouponSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    addCoupon(couponForm);
+    handleAddCoupon(couponForm);
     setCouponForm({
       name: '',
       code: '',
@@ -308,9 +174,8 @@ const App = () => {
     setShowProductForm(true);
   };
 
-  const totals = calculateCartTotal(cart, selectedCoupon);
-
-  const filteredProducts = filterProducts(products, debouncedSearchTerm);
+  // totals는 useCart에서 가져옴
+  const totals = total;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -327,7 +192,7 @@ const App = () => {
             >
               <span className="mr-2">{notif.message}</span>
               <button 
-                onClick={() => setNotifications(prev => prev.filter(n => n.id !== notif.id))}
+                onClick={() => removeNotification(notif.id)}
                 className="text-white hover:text-gray-200"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -468,7 +333,7 @@ const App = () => {
                             수정
                           </button>
                           <button
-                            onClick={() => deleteProduct(product.id)}
+                            onClick={() => handleDeleteProduct(product.id)}
                             className="text-red-600 hover:text-red-900"
                           >
                             삭제
@@ -665,7 +530,7 @@ const App = () => {
                           </div>
                         </div>
                         <button
-                          onClick={() => deleteCoupon(coupon.code)}
+                          onClick={() => handleDeleteCoupon(coupon.code)}
                           className="text-gray-400 hover:text-red-600 transition-colors"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -807,7 +672,7 @@ const App = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredProducts.map(product => {
-                    const remainingStock = getRemainingStock(product, cart);
+                    const remainingStock = getRemainingStockForProduct(product);
                     
                     return (
                       <div key={product.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
@@ -918,14 +783,24 @@ const App = () => {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center">
                                 <button 
-                                  onClick={() => updateQuantity(item.product.id, item.quantity - 1)} 
+                                  onClick={() => {
+                                    const result = updateQuantity(item.product.id, item.quantity - 1);
+                                    if (!result.success && result.message) {
+                                      addNotification(result.message, 'error');
+                                    }
+                                  }} 
                                   className="w-6 h-6 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                                 >
                                   <span className="text-xs">−</span>
                                 </button>
                                 <span className="mx-3 text-sm font-medium w-8 text-center">{item.quantity}</span>
                                 <button 
-                                  onClick={() => updateQuantity(item.product.id, item.quantity + 1)} 
+                                  onClick={() => {
+                                    const result = updateQuantity(item.product.id, item.quantity + 1);
+                                    if (!result.success && result.message) {
+                                      addNotification(result.message, 'error');
+                                    }
+                                  }} 
                                   className="w-6 h-6 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                                 >
                                   <span className="text-xs">+</span>
