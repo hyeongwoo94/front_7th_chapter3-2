@@ -416,6 +416,7 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div>안녕</div>
       {notifications.length > 0 && (
         <div className="fixed top-20 right-4 z-50 space-y-2 max-w-sm">
           {notifications.map(notif => (
