@@ -35,10 +35,9 @@ export const PagesLayout = () => {
     addToCart,
     removeFromCart,
     updateQuantity,
-    applyCoupon,
-    setSelectedCoupon,
-    clearCart,
-    completeOrder,
+            applyCoupon,
+            setSelectedCoupon,
+            completeOrder,
     getRemainingStockForProduct,
     handleAddProduct,
     handleUpdateProduct,
@@ -103,7 +102,6 @@ export const PagesLayout = () => {
             onUpdateQuantity={updateQuantity}
             onApplyCoupon={applyCoupon}
             onSetSelectedCoupon={setSelectedCoupon}
-            onClearCart={clearCart}
             onOrder={completeOrder}
             getRemainingStockForProduct={getRemainingStockForProduct}
             formatPrice={formatPrice}

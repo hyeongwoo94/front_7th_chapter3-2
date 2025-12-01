@@ -16,7 +16,6 @@ interface CartPageProps {
   onUpdateQuantity: (productId: string, quantity: number) => { success: boolean; message?: string };
   onApplyCoupon: (coupon: Coupon) => void;
   onSetSelectedCoupon: (coupon: Coupon | null) => void;
-  onClearCart: () => void;
   onOrder: () => void;
   getRemainingStockForProduct: (product: ProductWithUI) => number;
   formatPrice: (price: number, productId?: string) => string;
@@ -35,7 +34,6 @@ export const CartPage = ({
   onUpdateQuantity,
   onApplyCoupon,
   onSetSelectedCoupon,
-  onClearCart,
   onOrder,
   getRemainingStockForProduct,
   formatPrice,
@@ -70,7 +68,6 @@ export const CartPage = ({
           onUpdateQuantity={onUpdateQuantity}
           onApplyCoupon={onApplyCoupon}
           onSetSelectedCoupon={onSetSelectedCoupon}
-          onClearCart={onClearCart}
           onOrder={onOrder}
           formatPrice={(price) => formatPrice(price)}
           addNotification={addNotification}

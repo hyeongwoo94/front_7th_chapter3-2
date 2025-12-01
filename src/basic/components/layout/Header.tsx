@@ -1,5 +1,4 @@
 import { SearchBar } from '../features/product/SearchBar';
-import { Button } from '../ui/Button';
 import { CartIcon } from '../icons';
 
 interface HeaderProps {
@@ -33,16 +32,16 @@ export const Header = ({
             )}
           </div>
           <nav className="flex items-center space-x-4">
-            <Button
+            <button
               onClick={onToggleAdmin}
-              variant={isAdmin ? 'primary' : 'secondary'}
-              className={isAdmin 
-                ? '!px-3 !py-1.5 !text-sm !rounded !bg-gray-800 !text-white' 
-                : '!px-3 !py-1.5 !text-sm !rounded !text-gray-600 hover:!text-gray-900 !bg-transparent hover:!bg-transparent'
-              }
+              className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                isAdmin 
+                  ? 'bg-gray-800 text-white' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
             >
               {isAdmin ? '쇼핑몰로 돌아가기' : '관리자 페이지로'}
-            </Button>
+            </button>
             {!isAdmin && (
               <div className="relative">
                 <CartIcon className="w-6 h-6 text-gray-700" />

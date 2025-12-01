@@ -1,5 +1,4 @@
 import { ProductWithUI } from '../../../constants';
-import { Button } from '../../ui/Button';
 import { ProductForm } from './ProductForm';
 import { ProductFormData } from './types';
 
@@ -38,9 +37,12 @@ export const ProductManagement = ({
       <div className="p-6 border-b border-gray-200">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">상품 목록</h2>
-          <Button onClick={onAddProduct} variant="primary">
+          <button
+            onClick={onAddProduct}
+            className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800"
+          >
             새 상품 추가
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -71,19 +73,18 @@ export const ProductManagement = ({
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{product.description || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Button
+                  <button
                     onClick={() => onEditProduct(product)}
-                    variant="secondary"
-                    className="mr-3"
+                    className="text-indigo-600 hover:text-indigo-900 mr-3"
                   >
                     수정
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     onClick={() => onDeleteProduct(product.id)}
-                    variant="danger"
+                    className="text-red-600 hover:text-red-900"
                   >
                     삭제
-                  </Button>
+                  </button>
                 </td>
               </tr>
             ))}
