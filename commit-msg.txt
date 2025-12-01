@@ -1,0 +1,5 @@
+chore: 중복 파일 정리 및 Input 컴포넌트 수정
+
+- hooks/app/useShoppingMall.ts 중복 파일 삭제
+- Input.tsx 컴포넌트 수정
+
