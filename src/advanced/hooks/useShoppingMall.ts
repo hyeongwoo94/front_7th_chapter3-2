@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { ProductWithUI } from '../../constants';
-import { Coupon } from '../../../types';
+import { Coupon } from '../../types';
 import { useCart } from './entities/useCart';
 import { useProducts } from './entities/useProducts';
 import { useCoupons } from './entities/useCoupons';

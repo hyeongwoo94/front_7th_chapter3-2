@@ -1,6 +1,6 @@
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
-import { CartItem, Coupon, Product } from '../../../types';
+import { CartItem, Coupon, Product } from '../../types';
 import {
   addItemToCart,
   removeItemFromCart,

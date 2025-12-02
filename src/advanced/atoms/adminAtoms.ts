@@ -2,7 +2,7 @@ import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { ProductWithUI } from '../constants';
 import { ProductFormData, CouponFormData, EMPTY_PRODUCT_FORM, EMPTY_COUPON_FORM } from '../components/features/admin/types';
-import { Coupon } from '../../../types';
+import { Coupon } from '../../types';
 import { initialCoupons } from '../constants';
 
 // 기본 Atoms
