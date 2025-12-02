@@ -121,14 +121,11 @@ src/basic/components/
 │   └── PagesLayout.tsx
 ├── features/             # 엔티티별 기능 컴포넌트
 │   ├── product/          # 상품 관련 컴포넌트
-│   │   ├── ProductCard.tsx
-│   │   ├── ProductList.tsx
-│   │   └── SearchBar.tsx
+│   │   └── ProductCard.tsx
 │   ├── cart/             # 장바구니 관련 컴포넌트
 │   │   ├── Cart.tsx
 │   │   └── CartItem.tsx
 │   ├── coupon/           # 쿠폰 관련 컴포넌트
-│   │   ├── CouponCard.tsx
 │   │   └── CouponSelector.tsx
 │   └── admin/            # 관리자 기능 컴포넌트
 │       ├── AdminPage.tsx
@@ -136,7 +133,6 @@ src/basic/components/
 │       ├── ProductForm.tsx
 │       ├── CouponManagement.tsx
 │       ├── CouponForm.tsx
-│       ├── TabNavigation.tsx
 │       └── types.ts
 ├── pages/                 # 페이지 컴포넌트
 │   └── CartPage.tsx
@@ -180,7 +176,7 @@ src/basic/components/
 **컴포넌트**:
 - **`Header.tsx`**: 애플리케이션 헤더
   - Props: `isAdmin`, `onToggleAdmin`, `searchTerm`, `onSearchChange`, `cartItemCount`
-  - 검색바, 관리자 모드 전환, 장바구니 아이콘 포함
+  - 검색 입력 필드(네이티브 input), 관리자 모드 전환 버튼(네이티브 button), 장바구니 아이콘 포함
 
 - **`PagesLayout.tsx`**: 전체 페이지 레이아웃
   - `useApp` Hook을 사용하여 모든 상태와 액션을 받음
@@ -204,15 +200,6 @@ src/basic/components/
   - 상품 이미지, 이름, 가격, 재고, 할인 정보 표시
   - 장바구니 추가 버튼 포함
 
-- **`ProductList.tsx`**: 상품 목록을 표시하는 섹션
-  - Props: `products`, `filteredProducts`, `searchTerm`, `onAddToCart`, `getRemainingStock`, `formatPrice`
-  - `ProductCard`를 그리드로 배치
-  - 검색 결과가 없을 때 메시지 표시
-
-- **`SearchBar.tsx`**: 상품 검색 입력 필드
-  - Props: `value`, `onChange`, `className`
-  - 검색어 입력을 받아 상위 컴포넌트로 전달
-
 #### `features/cart/` - 장바구니 관련 컴포넌트
 
 - **`Cart.tsx`**: 장바구니 섹션 컴포넌트
@@ -227,11 +214,6 @@ src/basic/components/
 
 #### `features/coupon/` - 쿠폰 관련 컴포넌트
 
-- **`CouponCard.tsx`**: 쿠폰을 표시하는 카드
-  - Props: `coupon`, `onDelete?`, `isAdmin?`
-  - 쿠폰 정보 표시 (이름, 코드, 할인 정보)
-  - 관리자 모드에서 삭제 버튼 표시
-
 - **`CouponSelector.tsx`**: 쿠폰 선택 드롭다운
   - Props: `coupons`, `selectedCoupon`, `onSelect`, `onClear`
   - 쿠폰 선택 및 적용 기능
@@ -240,7 +222,7 @@ src/basic/components/
 
 - **`AdminPage.tsx`**: 관리자 페이지 메인 컴포넌트
   - Props: Admin 관련 모든 상태와 액션
-  - `TabNavigation`, `ProductManagement`, `CouponManagement`를 조건부 렌더링
+  - 내부에서 탭 네비게이션을 구현하고, `ProductManagement`, `CouponManagement`를 조건부 렌더링
 
 - **`ProductManagement.tsx`**: 상품 관리 섹션
   - Props: `products`, `editingProduct`, `productForm`, `showProductForm`, `onAddProduct`, `onEditProduct`, `onDeleteProduct`, `onFormChange`, `onFormSubmit`, `onFormCancel`, `formatPrice`, `addNotification`
@@ -260,10 +242,6 @@ src/basic/components/
   - Props: `couponForm`, `onFormChange`, `onSubmit`, `onCancel`, `addNotification`
   - 쿠폰 정보 입력 폼 (이름, 코드, 할인 타입, 할인 값)
 
-- **`TabNavigation.tsx`**: 탭 네비게이션
-  - Props: `activeTab`, `onTabChange`
-  - 상품 관리 / 쿠폰 관리 탭 전환
-
 - **`types.ts`**: 관리자 관련 타입 정의
   - `ProductFormData`, `CouponFormData`, `AdminTab`
   - `EMPTY_PRODUCT_FORM`, `EMPTY_COUPON_FORM` 상수
@@ -282,8 +260,9 @@ src/basic/components/
 **컴포넌트**:
 - **`CartPage.tsx`**: 쇼핑몰 메인 페이지
   - Props: `searchTerm`, `cart`, `selectedCoupon`, `total`, `coupons`, `onAddToCart`, `onRemoveFromCart`, `onUpdateQuantity`, `onApplyCoupon`, `onSetSelectedCoupon`, `onClearCart`, `onOrder`, `getRemainingStockForProduct`, `formatPrice`, `addNotification`
-  - `ProductList`와 `Cart` 컴포넌트를 조합
-  - `useProducts`와 `useDebounce` Hook을 내부에서 사용
+  - `ProductCard`를 그리드로 배치하여 상품 목록 표시
+  - `Cart` 컴포넌트와 함께 페이지 구성
+  - `useProducts`와 `useDebounce` Hook을 내부에서 사용하여 상품 필터링
 
 **특징**:
 - ✅ 여러 기능 컴포넌트를 조합
@@ -547,5 +526,5 @@ const PagesLayout = () => {
 
 ---
 
-**마지막 업데이트**: 2025-12-01
+**마지막 업데이트**: 2025-01-02
 

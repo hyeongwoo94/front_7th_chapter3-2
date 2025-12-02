@@ -78,15 +78,17 @@ src/basic/hooks/
 ├── useAdminForm.ts        # Admin 폼 관리 Hook
 ├── useAppUI.ts            # 앱 UI 상태 관리 Hook
 ├── useShoppingMall.ts     # 쇼핑몰 비즈니스 로직 조합 Hook
+├── useApp.ts              # 앱 전체 비즈니스 로직 조합 Hook
 └── README.md
 ```
 
 **폴더별 설명**:
 - **`entities/`**: 엔티티별 비즈니스 로직 Hook (Cart, Product, Coupon) - 엔티티별로 명확히 분리
 - **루트 레벨**: 특정 엔티티에 속하지 않는 Hook들
-  - `useAdminForm.ts`: Admin 기능 관련 Hook
-  - `useAppUI.ts`: UI 상태 관리 Hook (알림, 검색어, 모드 전환 등)
-  - `useShoppingMall.ts`: 여러 엔티티 Hook을 조합한 앱 레벨 Hook
+  - `useAdminForm.ts`: Admin 폼 상태 관리 Hook
+  - `useAppUI.ts`: 앱 UI 상태 관리 Hook (알림, 검색어, 모드 전환 등)
+  - `useShoppingMall.ts`: 여러 엔티티 Hook을 조합한 쇼핑몰 비즈니스 로직 Hook
+  - `useApp.ts`: `useAppUI`와 `useShoppingMall`을 조합한 최상위 Hook
 
 **참고**: 
 - 알림 기능은 단순 UI 로직이므로 `components/ui/Toast.tsx`로 분리되었고, 상태 관리는 `utils/hooks/useNotifications.ts`로 분리되었습니다.
@@ -294,6 +296,241 @@ import { initialCoupons } from '../constants';
 
 ---
 
+### 📦 `useAdminForm` - Admin 폼 관리 Hook
+
+#### 목적
+관리자 페이지의 폼 상태 관리 (상품 폼, 쿠폰 폼, 탭 상태 등)
+
+#### 상태 (State)
+- `showCouponForm: boolean` - 쿠폰 폼 표시 여부
+- `activeTab: 'products' | 'coupons'` - 활성 탭
+- `showProductForm: boolean` - 상품 폼 표시 여부
+- `editingProduct: string | null` - 수정 중인 상품 ID (또는 'new')
+- `productForm: ProductFormData` - 상품 폼 데이터
+- `couponForm: CouponFormData` - 쿠폰 폼 데이터
+
+#### 주요 함수
+
+##### 1. `startEditProduct(product: ProductWithUI)`
+**역할**: 상품 수정 시작
+**로직**: 상품 정보를 폼에 채우고 수정 모드로 전환
+
+##### 2. `resetProductForm()`
+**역할**: 상품 폼 초기화
+
+##### 3. `resetCouponForm()`
+**역할**: 쿠폰 폼 초기화
+
+#### 반환값
+```typescript
+{
+  // UI 상태
+  showCouponForm: boolean;
+  setShowCouponForm: (show: boolean) => void;
+  activeTab: 'products' | 'coupons';
+  setActiveTab: (tab: 'products' | 'coupons') => void;
+  showProductForm: boolean;
+  setShowProductForm: (show: boolean) => void;
+  
+  // 폼 상태
+  editingProduct: string | null;
+  setEditingProduct: (id: string | null) => void;
+  productForm: ProductFormData;
+  setProductForm: (form: ProductFormData) => void;
+  couponForm: CouponFormData;
+  setCouponForm: (form: CouponFormData) => void;
+  
+  // 액션
+  startEditProduct: (product: ProductWithUI) => void;
+  resetProductForm: () => void;
+  resetCouponForm: () => void;
+}
+```
+
+---
+
+### 📦 `useAppUI` - 앱 UI 상태 관리 Hook
+
+#### 목적
+앱 전체의 UI 상태 관리 (알림, 검색어, 모드 전환)
+
+#### 사용하는 Hooks
+```typescript
+import { useNotifications } from '../utils/hooks/useNotifications';
+```
+
+#### 상태 (State)
+- `notifications: Notification[]` - 알림 메시지 배열 (useNotifications에서 관리)
+- `searchTerm: string` - 검색어
+- `isAdmin: boolean` - 관리자 모드 여부
+
+#### 주요 함수
+
+##### 1. `toggleAdmin()`
+**역할**: 관리자 모드 전환
+
+#### 반환값
+```typescript
+{
+  // 알림
+  notifications: Notification[];
+  addNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
+  removeNotification: (id: string) => void;
+  
+  // 검색어
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  
+  // 모드
+  isAdmin: boolean;
+  setIsAdmin: (isAdmin: boolean) => void;
+  toggleAdmin: () => void;
+}
+```
+
+---
+
+### 📦 `useShoppingMall` - 쇼핑몰 비즈니스 로직 조합 Hook
+
+#### 목적
+여러 엔티티 Hook을 조합하고 알림 로직을 추가한 쇼핑몰 비즈니스 로직 Hook
+
+#### 사용하는 Hooks
+```typescript
+import { useCart } from './entities/useCart';
+import { useProducts } from './entities/useProducts';
+import { useCoupons } from './entities/useCoupons';
+import { useAdminForm } from './useAdminForm';
+```
+
+#### 파라미터
+- `isAdmin: boolean` - 관리자 모드 여부
+- `addNotification: (message: string, type?: 'error' | 'success' | 'warning') => void` - 알림 추가 함수
+
+#### 주요 함수
+
+##### 1. `addToCart(product: ProductWithUI)`
+**역할**: 장바구니에 상품 추가 (알림 포함)
+**로직**: `useCart`의 `addToCart`를 호출하고 결과에 따라 알림 표시
+
+##### 2. `applyCoupon(coupon: Coupon)`
+**역할**: 쿠폰 적용 (알림 포함)
+**로직**: `useCart`의 `applyCoupon`을 호출하고 결과에 따라 알림 표시
+
+##### 3. `completeOrder()`
+**역할**: 주문 완료
+**로직**: 주문 번호 생성, 알림 표시, 장바구니 비우기
+
+##### 4. `handleAddProduct(newProduct: Omit<ProductWithUI, 'id'>)`
+**역할**: 상품 추가 (알림 포함)
+
+##### 5. `handleUpdateProduct(productId: string, updates: Partial<ProductWithUI>)`
+**역할**: 상품 수정 (알림 포함)
+
+##### 6. `handleDeleteProduct(productId: string)`
+**역할**: 상품 삭제 (알림 포함)
+
+##### 7. `handleAddCoupon(newCoupon: CouponFormData)`
+**역할**: 쿠폰 추가 (알림 포함)
+**로직**: `CouponFormData`를 `Coupon`으로 변환 후 추가
+
+##### 8. `handleDeleteCoupon(couponCode: string)`
+**역할**: 쿠폰 삭제 (알림 포함)
+
+##### 9. `formatPrice(price: number, productId?: string)`
+**역할**: 가격 포맷팅 (관리자 모드, 재고 상태 고려)
+
+#### 반환값
+```typescript
+{
+  // 비즈니스 상태
+  products: ProductWithUI[];
+  coupons: Coupon[];
+  cart: CartItem[];
+  selectedCoupon: Coupon | null;
+  total: { totalBeforeDiscount: number; totalAfterDiscount: number };
+  totalItemCount: number;
+  
+  // Admin 폼 상태
+  showCouponForm: boolean;
+  setShowCouponForm: (show: boolean) => void;
+  activeTab: 'products' | 'coupons';
+  setActiveTab: (tab: 'products' | 'coupons') => void;
+  showProductForm: boolean;
+  setShowProductForm: (show: boolean) => void;
+  editingProduct: string | null;
+  setEditingProduct: (id: string | null) => void;
+  productForm: ProductFormData;
+  setProductForm: (form: ProductFormData) => void;
+  couponForm: CouponFormData;
+  setCouponForm: (form: CouponFormData) => void;
+  
+  // 액션
+  addToCart: (product: ProductWithUI) => void;
+  removeFromCart: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => { success: boolean; message?: string };
+  applyCoupon: (coupon: Coupon) => void;
+  setSelectedCoupon: (coupon: Coupon | null) => void;
+  clearCart: () => void;
+  completeOrder: () => void;
+  getRemainingStockForProduct: (product: ProductWithUI) => number;
+  
+  // Admin 액션
+  handleAddProduct: (newProduct: Omit<ProductWithUI, 'id'>) => void;
+  handleUpdateProduct: (productId: string, updates: Partial<ProductWithUI>) => void;
+  handleDeleteProduct: (productId: string) => void;
+  handleAddCoupon: (newCoupon: CouponFormData) => void;
+  handleDeleteCoupon: (couponCode: string) => void;
+  handleProductSubmit: (e: React.FormEvent) => void;
+  handleCouponSubmit: (e: React.FormEvent) => void;
+  startEditProduct: (product: ProductWithUI) => void;
+  
+  // 유틸리티
+  formatPrice: (price: number, productId?: string) => string;
+}
+```
+
+---
+
+### 📦 `useApp` - 앱 전체 비즈니스 로직 조합 Hook
+
+#### 목적
+`useAppUI`와 `useShoppingMall`을 조합하여 앱 전체에 필요한 모든 상태와 액션을 제공하는 최상위 Hook
+
+#### 사용하는 Hooks
+```typescript
+import { useAppUI } from './useAppUI';
+import { useShoppingMall } from './useShoppingMall';
+```
+
+#### 반환값
+`useAppUI`와 `useShoppingMall`의 모든 반환값을 합친 객체
+
+#### 사용 예시
+```typescript
+import { useApp } from './hooks/useApp';
+import { PagesLayout } from './components/layout/PagesLayout';
+
+const App = () => {
+  const {
+    notifications,
+    removeNotification,
+    searchTerm,
+    setSearchTerm,
+    isAdmin,
+    toggleAdmin,
+    products,
+    cart,
+    addToCart,
+    // ... 모든 상태와 액션
+  } = useApp();
+
+  return <PagesLayout />;
+};
+```
+
+---
+
 ## 사용 예시
 
 ### 예시 1: useCart 사용
@@ -362,46 +599,50 @@ const ProductList = () => {
 };
 ```
 
-### 예시 3: 여러 Hooks 조합
+### 예시 3: useApp 사용 (최상위 Hook)
 
 ```typescript
-import { useState, useCallback } from 'react';
-import { useCart } from './hooks/entities/useCart';
-import { useProducts } from './hooks/entities/useProducts';
-import { Toast, Notification } from './components/ui/Toast';
+import { useApp } from './hooks/useApp';
+import { PagesLayout } from './components/layout/PagesLayout';
 
 const App = () => {
-  // 알림 상태 관리 (단순 UI 상태는 App.tsx에서 직접 처리)
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  
-  const addNotification = useCallback((message: string, type: 'error' | 'success' | 'warning' = 'success') => {
-    const id = Date.now().toString();
-    setNotifications(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, NOTIFICATION_DURATION);
-  }, []);
+  // useApp은 useAppUI와 useShoppingMall을 조합한 최상위 Hook
+  const {
+    notifications,
+    removeNotification,
+    searchTerm,
+    setSearchTerm,
+    isAdmin,
+    toggleAdmin,
+    products,
+    cart,
+    addToCart,
+    // ... 모든 상태와 액션
+  } = useApp();
 
-  const { addToCart } = useCart();
-  const { products } = useProducts();
+  return <PagesLayout />;
+};
+```
 
-  const handleAddToCart = (product: Product) => {
-    const result = addToCart(product);
-    if (result.success) {
-      addNotification(result.message, 'success');
-    } else {
-      addNotification(result.message, 'error');
-    }
-  };
+### 예시 4: useShoppingMall 사용
+
+```typescript
+import { useShoppingMall } from './hooks/useShoppingMall';
+import { useAppUI } from './hooks/useAppUI';
+
+const MyComponent = () => {
+  const { isAdmin, addNotification } = useAppUI();
+  const {
+    products,
+    cart,
+    addToCart,
+    formatPrice
+  } = useShoppingMall(isAdmin, addNotification);
 
   return (
     <div>
-      <Toast 
-        notifications={notifications} 
-        onRemove={(id) => setNotifications(prev => prev.filter(n => n.id !== id))} 
-      />
       {products.map(product => (
-        <button key={product.id} onClick={() => handleAddToCart(product)}>
+        <button key={product.id} onClick={() => addToCart(product)}>
           장바구니 담기
         </button>
       ))}
@@ -552,20 +793,24 @@ useCoupons
 
 ### Hook 간 통신
 
-Hooks는 서로 직접 통신하지 않습니다. 대신 상위 컴포넌트에서 여러 Hooks를 조합하여 사용합니다:
+Hooks는 서로 직접 통신하지 않습니다. 대신 상위 Hook에서 여러 Hooks를 조합하여 사용합니다:
 
 ```typescript
-// ✅ 좋은 예: 상위 컴포넌트에서 조합
-const App = () => {
-  const { cart } = useCart();
+// ✅ 좋은 예: 상위 Hook에서 조합
+const useShoppingMall = (isAdmin: boolean, addNotification: Function) => {
   const { products } = useProducts();
-  // 단순 UI 상태는 App.tsx에서 직접 관리
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  
-  // 여러 Hooks를 조합하여 사용
+  const { cart } = useCart();
+  const { coupons } = useCoupons();
+  // 여러 엔티티 Hook을 조합하여 사용
 };
 
-// ❌ 나쁜 예: Hook 내부에서 다른 Hook 호출
+const useApp = () => {
+  const { isAdmin, addNotification } = useAppUI();
+  const shoppingMall = useShoppingMall(isAdmin, addNotification);
+  // useAppUI와 useShoppingMall을 조합
+};
+
+// ❌ 나쁜 예: 엔티티 Hook 내부에서 다른 엔티티 Hook 호출
 const useCart = () => {
   const { products } = useProducts(); // ❌ 안티패턴
   // ...
@@ -604,5 +849,5 @@ test('useCart', () => {
 
 ---
 
-**마지막 업데이트**: 2025-12-01
+**마지막 업데이트**: 2025-01-02
 
