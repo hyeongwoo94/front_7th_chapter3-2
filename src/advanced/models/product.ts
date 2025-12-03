@@ -28,3 +28,5 @@ export const filterProducts = <T extends Product>(
   });
 };
 
+//이건 비즈니스 로직인 순수함수이다.
+//검색 규칙이다.
