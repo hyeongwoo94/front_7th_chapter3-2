@@ -6,10 +6,10 @@ import { totalItemCountAtom } from '../../atoms/cartAtoms';
 
 // 헤더 영역 컴포넌트
 export const Header = () => {
-  const isAdmin = useAtomValue(isAdminAtom);
-  const toggleAdmin = useSetAtom(toggleAdminAtom);
-  const [searchTerm, setSearchTerm] = useAtom(searchTermAtom);
-  const cartItemCount = useAtomValue(totalItemCountAtom);
+  const isAdmin = useAtomValue(isAdminAtom); //읽기 전용
+  const toggleAdmin = useSetAtom(toggleAdminAtom); //쓰기 전용
+  const [searchTerm, setSearchTerm] = useAtom(searchTermAtom); //양방향
+  const cartItemCount = useAtomValue(totalItemCountAtom); //읽기 전용
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40 border-b">
