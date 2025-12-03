@@ -35,4 +35,5 @@ export const validateCoupon = (
   }
   return true;
 };
-
+// 1. 쿠폰의 타입 확인
+// 2. 최소 금액이 충족했는지 확인 
